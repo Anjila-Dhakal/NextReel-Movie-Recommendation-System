@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manage Users — NextReel Admin{% endblock %}
+
+{% block content %}
+
+<div class="admin-layout">
+
+  <!-- ============================================================
+       SIDEBAR
+  ============================================================ -->
+  {% url 'admin_panel:dashboard' as url_dash %}
+  {% url 'admin_panel:users' as url_users %}
+  {% url 'admin_panel:movies' as url_movies %}
+
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__header">
+      <span style="color:var(--accent); font-weight:700; font-size:1rem;">&#9881; Admin Panel</span>
+    </div>
+    <nav>
+      <a href="{{ url_dash }}"
+         class="admin-sidebar__link{% if request.path == url_dash %} admin-sidebar__link--active{% endif %}">
+        &#128202; Dashboard
+      </a>
+      <a href="{{ url_users }}"
+         class="admin-sidebar__link{% if request.path == url_users %} admin-sidebar__link--active{% endif %}">
+        &#128101; Users
+      </a>
+      <a href="{{ url_movies }}"
+         class="admin-sidebar__link{% if request.path == url_movies %} admin-sidebar__link--active{% endif %}">
+        &#127916; Movies
+      </a>
+      <a href="{% url 'admin_panel:add_movie' %}" class="admin-sidebar__link">
+        &#10133; Add Movie
+      </a>
+      <div class="admin-sidebar__divider"></div>
+      <form method="post" action="{% url 'admin_panel:retrain' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="admin-sidebar__link admin-sidebar__link--btn"
+                onclick="return confirm('Retrain recommendation models? This may take a while.');">
+          &#129302; Retrain Models
+        </button>
+      </form>
+      <div class="admin-sidebar__divider"></div>
+      <a href="{% url 'home' %}" class="admin-sidebar__link">
+        &#8592; Back to Site
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ============================================================
+       MAIN CONTENT
+  ============================================================ -->
+  <div class="admin-content">
+    <div class="admin-content__header">
+      <h1 class="admin-content__title">User Management</h1>
+      {% if users %}
+      <span style="color:var(--text-muted); font-size:0.875rem;">
+        {{ users|length }} user{{ users|length|pluralize }} total
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- Search Bar -->
+    <div style="margin-bottom:1.5rem;">
+      <form method="get" action="{{ url_users }}" class="search-bar">
+        <input
+          type="text"
+          name="q"
+          value="{{ search_query|default:'' }}"
+          placeholder="Search by username or email..."
+          class="search-bar__input"
+          aria-label="Search users"
+        />
+        <button type="submit" class="search-bar__btn btn btn--primary">Search</button>
+        {% if search_query %}
+        <a href="{{ url_users }}" class="btn btn--ghost btn--sm">Clear</a>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card">
+      <div class="card__body" style="padding:0; overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Full Name</th>
+              <th>Date Joined</th>
+              <th>Active</th>
+              <th>Staff</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td style="color:var(--text-muted);">{{ forloop.counter }}</td>
+              <td>
+                <div style="display:flex; align-items:center; gap:0.6rem;">
+                  <div class="profile-avatar" style="width:32px; height:32px; font-size:0.75rem;">
+                    <span class="profile-avatar__fallback" style="
+                      display:flex; align-items:center; justify-content:center;
+                      width:32px; height:32px; border-radius:50%;
+                      background:var(--surface-2); color:var(--accent);
+                      font-weight:700; font-size:0.8rem;">
+                      {{ user.username|slice:":1"|upper }}
+                    </span>
+                  </div>
+                  <span style="font-weight:500;">{{ user.username }}</span>
+                </div>
+              </td>
+              <td style="color:var(--text-muted); font-size:0.875rem;">
+                {{ user.email|default:"—" }}
+              </td>
+              <td style="font-size:0.875rem;">
+                {{ user.get_full_name|default:"—" }}
+              </td>
+              <td style="color:var(--text-muted); font-size:0.85rem;">
+                {{ user.date_joined|date:"M j, Y" }}
+              </td>
+              <td>
+                {% if user.is_active %}
+                <span class="badge badge--positive">Active</span>
+                {% else %}
+                <span class="badge badge--negative">Inactive</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if user.is_staff or user.is_superuser %}
+                <span class="badge badge--positive">Staff</span>
+                {% else %}
+                <span class="badge badge--neutral">User</span>
+                {% endif %}
+              </td>
+              <td>
+                <div style="display:flex; gap:0.4rem; flex-wrap:nowrap;">
+                  <!-- Toggle Active -->
+                  <form method="post" action="" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_active" />
+                    <input type="hidden" name="user_id" value="{{ user.pk }}" />
+                    <button type="submit"
+                            class="btn btn--sm {% if user.is_active %}btn--secondary{% else %}btn--ghost{% endif %}"
+                            title="{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user"
+                            {% if user == request.user %}disabled title="Cannot deactivate yourself"{% endif %}>
+                      {% if user.is_active %}Deactivate{% else %}Activate{% endif %}
+                    </button>
+                  </form>
+
+                  <!-- Toggle Staff -->
+                  {% if not user.is_superuser %}
+                  <form method="post" action="" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_staff" />
+                    <input type="hidden" name="user_id" value="{{ user.pk }}" />
+                    <button type="submit"
+                            class="btn btn--sm btn--ghost"
+                            title="Toggle staff status"
+                            {% if user == request.user %}disabled{% endif %}>
+                      {% if user.is_staff %}Remove Staff{% else %}Make Staff{% endif %}
+                    </button>
+                  </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8">
+                <div class="empty-state" style="padding:2rem 0;">
+                  <div class="empty-state__icon">&#128101;</div>
+                  <p class="empty-state__text">
+                    {% if search_query %}
+                    No users match &ldquo;{{ search_query }}&rdquo;.
+                    {% else %}
+                    No users in the system.
+                    {% endif %}
+                  </p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination" style="margin-top:1.5rem;" aria-label="User list pages">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}"
+         class="pagination__item"><span class="pagination__link">&laquo; Prev</span></a>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="pagination__item">
+          <span class="pagination__link pagination__link--active">{{ num }}</span>
+        </span>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+        <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}"
+           class="pagination__item"><span class="pagination__link">{{ num }}</span></a>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}"
+         class="pagination__item"><span class="pagination__link">Next &raquo;</span></a>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+  </div><!-- /admin-content -->
+</div><!-- /admin-layout -->
+
+{% endblock %}

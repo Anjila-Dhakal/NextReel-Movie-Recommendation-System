@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Retrain Models — Admin{% endblock %}
+
+{% block content %}
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <p class="admin-sidebar__title">Admin Panel</p>
+    <a href="{% url 'admin_panel:dashboard' %}" class="admin-sidebar__link">📊 Dashboard</a>
+    <a href="{% url 'admin_panel:users' %}" class="admin-sidebar__link">👥 Users</a>
+    <a href="{% url 'admin_panel:movies' %}" class="admin-sidebar__link">🎬 Movies</a>
+    <a href="{% url 'admin_panel:retrain' %}" class="admin-sidebar__link admin-sidebar__link--active">🔄 Retrain Models</a>
+  </aside>
+
+  <main class="admin-content">
+    <div class="admin-header">
+      <h1 class="admin-header__title">🔄 Retrain ML Models</h1>
+      <p style="color:var(--text-muted);">Retrain the SVD recommendation engine and Naive Bayes sentiment classifier.</p>
+    </div>
+
+    {% if results %}
+    <div class="card" style="margin-bottom:2rem;">
+      <div class="card__body">
+        <h3 style="margin-bottom:1rem;color:var(--accent);">Training Results</h3>
+        {% if results.svd_status %}
+        <p style="margin-bottom:0.5rem;">
+          <strong>SVD Model:</strong>
+          <span class="badge badge--{{ results.svd_status|yesno:'positive,negative' }}">
+            {{ results.svd_message }}
+          </span>
+        </p>
+        {% endif %}
+        {% if results.sentiment_status %}
+        <p>
+          <strong>Sentiment Model:</strong>
+          <span class="badge badge--{{ results.sentiment_status|yesno:'positive,negative' }}">
+            {{ results.sentiment_message }}
+          </span>
+        </p>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;">
+      <div class="card">
+        <div class="card__body" style="padding:1.5rem;">
+          <h3 style="margin-bottom:0.5rem;">🎯 SVD Collaborative Filter</h3>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">
+            Trains the recommendation engine on all user ratings in the database using matrix factorization.
+          </p>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="model" value="svd">
+            <button type="submit" class="btn btn--primary">Train SVD Model</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__body" style="padding:1.5rem;">
+          <h3 style="margin-bottom:0.5rem;">💬 Naive Bayes Sentiment</h3>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">
+            Retrains the sentiment classifier using the IMDB dataset at <code>datasets/imdb_reviews.csv</code>.
+          </p>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="model" value="sentiment">
+            <button type="submit" class="btn btn--secondary">Train Sentiment Model</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__body" style="padding:1.5rem;">
+        <h3 style="margin-bottom:0.5rem;">🔄 Retrain Both</h3>
+        <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">
+          Sequentially retrain both the SVD and sentiment models.
+        </p>
+        <form method="post" onsubmit="return confirm('This may take a few minutes. Continue?');">
+          {% csrf_token %}
+          <input type="hidden" name="model" value="both">
+          <button type="submit" class="btn btn--primary">Retrain All Models</button>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ profile_user.username }}'s Profile — NextReel{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     PROFILE HEADER
+============================================================ -->
+<div class="profile-header">
+  <div class="profile-header__inner">
+
+    <!-- Avatar -->
+    <div class="profile-avatar">
+      {% if profile_user.avatar %}
+      <img src="{{ profile_user.avatar.url }}" alt="{{ profile_user.username }} avatar"
+        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+      <span class="profile-avatar__fallback" style="display:none;">
+        {{ profile_user.username|slice:":1"|upper }}
+      </span>
+      {% else %}
+      <span class="profile-avatar__fallback">
+        {{ profile_user.username|slice:":1"|upper }}
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- Info -->
+    <div class="profile-info">
+      <h1 class="profile-info__name">
+        {% if profile_user.first_name or profile_user.last_name %}
+        {{ profile_user.first_name }} {{ profile_user.last_name }}
+        {% else %}
+        {{ profile_user.username }}
+        {% endif %}
+      </h1>
+      <p class="profile-info__username" style="color:var(--text-muted);">@{{ profile_user.username }}</p>
+      {% if profile_user.bio %}
+      <p class="profile-info__bio">{{ profile_user.bio }}</p>
+      {% endif %}
+      <p class="profile-info__joined" style="color:var(--text-muted); font-size:0.85rem;">
+        Member since {{ profile_user.date_joined|date:"F Y" }}
+      </p>
+    </div>
+
+    <!-- Edit button (own profile) -->
+    {% if request.user == profile_user %}
+    <div class="profile-header__actions">
+      <a href="{% url 'users:edit_profile' %}" class="btn btn--ghost btn--sm">Edit Profile</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ============================================================
+     STATS ROW
+============================================================ -->
+<div class="section section--stats">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-card__value">{{ total_reviews }}</span>
+      <span class="stat-card__label">Reviews</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__value">{{ watch_history|length }}</span>
+      <span class="stat-card__label">Movies Watched</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-card__value">{{ watchlist|length }}</span>
+      <span class="stat-card__label">Watchlist</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PROFILE TABS  (CSS-only radio hack)
+============================================================ -->
+<div class="section profile-tabs">
+
+  <input type="radio" name="profile-tab" id="ptab-reviews" class="profile-tab__radio" checked hidden />
+  <input type="radio" name="profile-tab" id="ptab-watchlist" class="profile-tab__radio" hidden />
+  <input type="radio" name="profile-tab" id="ptab-history" class="profile-tab__radio" hidden />
+
+  <div class="profile-tab-nav">
+    <label for="ptab-reviews" class="profile-tab-nav__item">
+      My Reviews
+      <span class="badge" style="margin-left:0.4rem;">{{ total_reviews }}</span>
+    </label>
+    <label for="ptab-watchlist" class="profile-tab-nav__item">
+      Watchlist
+      <span class="badge" style="margin-left:0.4rem;">{{ watchlist|length }}</span>
+    </label>
+    <label for="ptab-history" class="profile-tab-nav__item">
+      Watch History
+      <span class="badge" style="margin-left:0.4rem;">{{ watch_history|length }}</span>
+    </label>
+  </div>
+
+  <!-- ── TAB: MY REVIEWS ── -->
+  <div class="profile-tab-panel" id="ppanel-reviews">
+    {% if reviews %}
+    {% for review in reviews %}
+    <div class="review-card">
+      <div class="review-card__header">
+        <!-- Movie poster thumb -->
+        <a href="{% url 'movies:detail' review.movie.pk %}" class="review-card__movie-thumb">
+          <img src="{{ review.movie.poster_url }}" alt="{{ review.movie.title }}"
+            onerror="this.src='{% static 'images/default_poster.svg' %}'"
+            style="width:48px; height:68px; object-fit:cover; border-radius:0.35rem;" />
+        </a>
+        <div class="review-card__meta">
+          <a href="{% url 'movies:detail' review.movie.pk %}" style="font-weight:600; color:var(--text);">
+            {{ review.movie.title }}
+          </a>
+          <span style="color:var(--text-muted); font-size:0.8rem;">
+            {{ review.created_at|date:"N j, Y" }}
+          </span>
+        </div>
+        <div class="review-card__rating">
+          {% for i in "12345" %}
+          {% if forloop.counter <= review.rating %} <span class="star star--filled">&#9733;</span>
+            {% else %}
+            <span class="star star--empty">&#9734;</span>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% if review.sentiment %}
+        <span class="badge
+          {% if review.sentiment == 'positive' %}badge--positive
+          {% elif review.sentiment == 'negative' %}badge--negative
+          {% else %}badge--neutral{% endif %}">
+          {{ review.sentiment|capfirst }}
+        </span>
+        {% endif %}
+        {% if request.user == profile_user %}
+        <form method="post" action="{% url 'reviews:delete' review.pk %}" style="display:inline; margin-left:auto;"
+          onsubmit="return confirm('Delete this review?');">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--danger btn--icon btn--sm" title="Delete review">&#10005;</button>
+        </form>
+        {% endif %}
+      </div>
+      {% if review.review_text %}
+      <div class="review-card__body">{{ review.review_text }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state__icon">&#128172;</div>
+      <p class="empty-state__text">
+        {% if request.user == profile_user %}
+        You haven&rsquo;t written any reviews yet.
+        <a href="{% url 'movies:list' %}" class="btn btn--secondary btn--sm"
+          style="margin-top:1rem; display:inline-block;">Browse Movies to Review</a>
+        {% else %}
+        {{ profile_user.username }} hasn&rsquo;t written any reviews yet.
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── TAB: WATCHLIST ── -->
+  <div class="profile-tab-panel" id="ppanel-watchlist" style="display:none;" data-tab="watchlist">
+    {% if watchlist %}
+    <div class="movie-grid">
+      {% for entry in watchlist %}
+      <article class="movie-card">
+        <div class="movie-card__poster">
+          <a href="{% url 'movies:detail' entry.movie.pk %}">
+            <img src="{{ entry.movie.poster_url }}" alt="{{ entry.movie.title }} poster" loading="lazy"
+              onerror="this.src='{% static 'images/default_poster.svg' %}'" />
+          </a>
+          {% if entry.movie.avg_rating %}
+          <div class="movie-card__score">{{ entry.movie.avg_rating|floatformat:1 }}</div>
+          {% endif %}
+          <div class="movie-card__year-pill">{{ entry.movie.year }}</div>
+          <div class="movie-card__overlay">
+            <a href="{% url 'movies:detail' entry.movie.pk %}" class="btn btn--primary btn--sm">Details</a>
+            {% if request.user == profile_user %}
+            <button class="btn btn--ghost btn--sm watchlist-toggle"
+              data-url="{% url 'movies:watchlist' entry.movie.pk %}"
+              data-csrf="{{ csrf_token }}"
+              data-remove="true">
+              Remove
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        <div class="movie-card__body">
+          <h3 class="movie-card__title">
+            <a href="{% url 'movies:detail' entry.movie.pk %}">{{ entry.movie.title }}</a>
+          </h3>
+          <div class="movie-card__meta">
+            {% for genre in entry.movie.genres.all|slice:":2" %}
+            <span class="badge badge--genre">{{ genre.name }}</span>
+            {% endfor %}
+          </div>
+          <div class="movie-card__rating">
+            {% with rating=entry.movie.avg_rating|default:0 %}
+            {% for i in "12345" %}
+            {% if forloop.counter <= rating %}<span class="star star--filled">&#9733;</span>{% else %}<span class="star star--empty">&#9734;</span>{% endif %}
+            {% endfor %}
+            {% endwith %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state__icon">&#128203;</div>
+      <p class="empty-state__text">
+        {% if request.user == profile_user %}
+        Your watchlist is empty.
+        <a href="{% url 'movies:list' %}" class="btn btn--secondary btn--sm"
+          style="margin-top:1rem; display:inline-block;">Add Movies to Watchlist</a>
+        {% else %}
+        {{ profile_user.username }}&rsquo;s watchlist is empty.
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── TAB: WATCH HISTORY ── -->
+  <div class="profile-tab-panel" id="ppanel-history" style="display:none;" data-tab="history">
+    {% if watch_history %}
+    <div class="data-table-wrap" style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Movie</th>
+            <th>Year</th>
+            <th>Genres</th>
+            <th>Watched On</th>
+            <th>Rating</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in watch_history %}
+          <tr>
+            <td>
+              <a href="{% url 'movies:detail' entry.movie.pk %}" style="color:var(--accent); font-weight:500;">
+                {{ entry.movie.title }}
+              </a>
+            </td>
+            <td>{{ entry.movie.year }}</td>
+            <td>
+              {% for genre in entry.movie.genres.all|slice:":2" %}
+              <span class="badge badge--genre">{{ genre.name }}</span>
+              {% endfor %}
+            </td>
+            <td style="color:var(--text-muted);">{{ entry.watched_at|date:"M j, Y" }}</td>
+            <td>
+              {% with rating=entry.movie.avg_rating|default:0 %}
+              {% for i in "12345" %}
+              {% if forloop.counter <= rating %} <span class="star star--filled">&#9733;</span>
+                {% else %}
+                <span class="star star--empty">&#9734;</span>
+                {% endif %}
+                {% endfor %}
+                {% endwith %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state__icon">&#127902;</div>
+      <p class="empty-state__text">
+        {% if request.user == profile_user %}
+        You haven&rsquo;t watched any movies yet.
+        <a href="{% url 'movies:list' %}" class="btn btn--secondary btn--sm"
+          style="margin-top:1rem; display:inline-block;">Start Watching</a>
+        {% else %}
+        {{ profile_user.username }} hasn&rsquo;t watched any movies yet.
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+</div><!-- /profile-tabs -->
+
+<script>
+(function () {
+  const radios = document.querySelectorAll('.profile-tab__radio');
+  const panels = document.querySelectorAll('.profile-tab-panel');
+  const labels = document.querySelectorAll('.profile-tab-nav__item');
+
+  function showTab(id) {
+    panels.forEach(p => p.style.display = 'none');
+    labels.forEach(l => l.classList.remove('profile-tab-nav__item--active'));
+    const target = document.getElementById('ppanel-' + id);
+    if (target) target.style.display = 'block';
+    const label = document.querySelector('[for="ptab-' + id + '"]');
+    if (label) label.classList.add('profile-tab-nav__item--active');
+  }
+
+  radios.forEach(r => {
+    if (r.checked) showTab(r.id.replace('ptab-', ''));
+    r.addEventListener('change', () => showTab(r.id.replace('ptab-', '')));
+  });
+
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  if (tab) {
+    const radio = document.getElementById('ptab-' + tab);
+    if (radio) { radio.checked = true; showTab(tab); }
+  }
+})();
+</script>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var radios = document.querySelectorAll('.profile-tab__radio');
+    var panels = document.querySelectorAll('.profile-tab-panel');
+    function updatePanels() {
+      radios.forEach(function (radio, i) {
+        if (panels[i]) panels[i].style.display = radio.checked ? 'block' : 'none';
+      });
+    }
+    radios.forEach(function (radio) { radio.addEventListener('change', updatePanels); });
+    updatePanels();
+  });
+</script>
+{% endblock %}

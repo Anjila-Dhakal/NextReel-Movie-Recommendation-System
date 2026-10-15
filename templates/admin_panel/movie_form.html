@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if movie %}Edit "{{ movie.title }}"{% else %}Add New Movie{% endif %} — NextReel Admin
+{% endblock %}
+
+{% block content %}
+
+<div class="admin-layout">
+
+  <!-- ============================================================
+       SIDEBAR
+  ============================================================ -->
+  {% url 'admin_panel:dashboard' as url_dash %}
+  {% url 'admin_panel:users' as url_users %}
+  {% url 'admin_panel:movies' as url_movies %}
+
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__header">
+      <span style="color:var(--accent); font-weight:700; font-size:1rem;">&#9881; Admin Panel</span>
+    </div>
+    <nav>
+      <a href="{{ url_dash }}"
+         class="admin-sidebar__link{% if request.path == url_dash %} admin-sidebar__link--active{% endif %}">
+        &#128202; Dashboard
+      </a>
+      <a href="{{ url_users }}"
+         class="admin-sidebar__link{% if request.path == url_users %} admin-sidebar__link--active{% endif %}">
+        &#128101; Users
+      </a>
+      <a href="{{ url_movies }}"
+         class="admin-sidebar__link{% if request.path == url_movies %} admin-sidebar__link--active{% endif %}">
+        &#127916; Movies
+      </a>
+      <a href="{% url 'admin_panel:add_movie' %}" class="admin-sidebar__link">
+        &#10133; Add Movie
+      </a>
+      <div class="admin-sidebar__divider"></div>
+      <form method="post" action="{% url 'admin_panel:retrain' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="admin-sidebar__link admin-sidebar__link--btn"
+                onclick="return confirm('Retrain recommendation models? This may take a while.');">
+          &#129302; Retrain Models
+        </button>
+      </form>
+      <div class="admin-sidebar__divider"></div>
+      <a href="{% url 'home' %}" class="admin-sidebar__link">
+        &#8592; Back to Site
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ============================================================
+       MAIN CONTENT
+  ============================================================ -->
+  <div class="admin-content">
+    <div class="admin-content__header">
+      <div>
+        <h1 class="admin-content__title">
+          {% if movie %}Edit Movie{% else %}Add New Movie{% endif %}
+        </h1>
+        {% if movie %}
+        <p style="color:var(--text-muted); margin:0; font-size:0.875rem;">
+          Editing: <strong>{{ movie.title }}</strong> ({{ movie.year }})
+        </p>
+        {% endif %}
+      </div>
+      <a href="{% url 'admin_panel:movies' %}" class="btn btn--ghost btn--sm">
+        &#8592; Back to Movies
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card__body">
+        <form
+          method="post"
+          action="{% if movie %}{% url 'admin_panel:edit_movie' movie.pk %}{% else %}{% url 'admin_panel:add_movie' %}{% endif %}"
+          enctype="multipart/form-data"
+        >
+          {% csrf_token %}
+
+          <!-- Non-field errors -->
+          {% if form.non_field_errors %}
+          <div class="form-error"
+               style="margin-bottom:1.25rem; padding:0.75rem; border-radius:0.5rem; background:rgba(192,57,43,0.1);">
+            {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Two-column layout for the main fields -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+
+            <!-- Title -->
+            <div class="form-group" style="grid-column:1 / -1;">
+              <label for="{{ form.title.id_for_label }}" class="form-label">Title <span style="color:var(--cta);">*</span></label>
+              <input
+                type="text"
+                id="{{ form.title.id_for_label }}"
+                name="{{ form.title.html_name }}"
+                value="{{ form.title.value|default:'' }}"
+                class="form-input{% if form.title.errors %} form-input--error{% endif %}"
+                placeholder="Movie title"
+                required
+              />
+              {% if form.title.errors %}
+              <span class="form-error">{{ form.title.errors|join:", " }}</span>
+              {% endif %}
+            </div>
+
+            <!-- Year -->
+            <div class="form-group">
+              <label for="{{ form.year.id_for_label }}" class="form-label">Release Year <span style="color:var(--cta);">*</span></label>
+              <input
+                type="number"
+                id="{{ form.year.id_for_label }}"
+                name="{{ form.year.html_name }}"
+                value="{{ form.year.value|default:'' }}"
+                class="form-input{% if form.year.errors %} form-input--error{% endif %}"
+                placeholder="e.g. 2024"
+                min="1888"
+                max="2099"
+                required
+              />
+              {% if form.year.errors %}
+              <span class="form-error">{{ form.year.errors|join:", " }}</span>
+              {% endif %}
+            </div>
+
+            <!-- Genres (multi-select) -->
+            <div class="form-group">
+              <label for="{{ form.genres.id_for_label }}" class="form-label">Genres</label>
+              <select
+                id="{{ form.genres.id_for_label }}"
+                name="{{ form.genres.html_name }}"
+                class="form-input{% if form.genres.errors %} form-input--error{% endif %}"
+                multiple
+                size="5"
+                style="height:auto;"
+              >
+                {% for val, label in form.genres.field.choices %}
+                <option value="{{ val }}"
+                  {% if val in form.genres.value %}selected{% endif %}>
+                  {{ label }}
+                </option>
+                {% endfor %}
+              </select>
+              <span class="form-help">Hold Ctrl / Cmd to select multiple genres.</span>
+              {% if form.genres.errors %}
+              <span class="form-error">{{ form.genres.errors|join:", " }}</span>
+              {% endif %}
+            </div>
+
+            <!-- Description / Overview -->
+            <div class="form-group" style="grid-column:1 / -1;">
+              <label for="{{ form.description.id_for_label }}" class="form-label">Description / Overview</label>
+              <textarea
+                id="{{ form.description.id_for_label }}"
+                name="{{ form.description.html_name }}"
+                class="form-textarea{% if form.description.errors %} form-input--error{% endif %}"
+                rows="5"
+                placeholder="A brief synopsis or overview of the movie..."
+              >{{ form.description.value|default:'' }}</textarea>
+              {% if form.description.errors %}
+              <span class="form-error">{{ form.description.errors|join:", " }}</span>
+              {% endif %}
+            </div>
+
+            <!-- Poster URL -->
+            <div class="form-group">
+              <label for="{{ form.poster_url.id_for_label }}" class="form-label">Poster URL</label>
+              <input
+                type="url"
+                id="{{ form.poster_url.id_for_label }}"
+                name="{{ form.poster_url.html_name }}"
+                value="{{ form.poster_url.value|default:'' }}"
+                class="form-input{% if form.poster_url.errors %} form-input--error{% endif %}"
+                placeholder="https://example.com/poster.jpg"
+              />
+              <span class="form-help">Direct link to the poster image (HTTPS preferred).</span>
+              {% if form.poster_url.errors %}
+              <span class="form-error">{{ form.poster_url.errors|join:", " }}</span>
+              {% endif %}
+            </div>
+
+            <!-- Poster Upload -->
+            <div class="form-group">
+              <label for="{{ form.poster.id_for_label }}" class="form-label">
+                Upload Poster
+                {% if movie and movie.poster %}<span style="color:var(--text-muted); font-size:0.8rem;">(current file exists)</span>{% endif %}
+              </label>
+              {% if movie and movie.poster %}
+              <div style="margin-bottom:0.5rem;">
+                <img
+                  src="{{ movie.poster.url }}"
+                  alt="Current poster"
+                  style="height:80px; border-radius:0.35rem; object-fit:cover;"
+                  onerror="this.style.display='none'"
+                />
+              </div>
+              {% endif %}
+              <input
+                type="file"
+                id="{{ form.poster.id_for_label }}"
+                name="{{ form.poster.html_name }}"
+                class="form-input{% if form.poster.errors %} form-input--error{% endif %}"
+                accept="image/*"
+              />
+              <span class="form-help">Upload a local poster image (JPG, PNG, WebP). Overrides URL if provided.</span>
+              {% if form.poster.errors %}
+              <span class="form-error">{{ form.poster.errors|join:", " }}</span>
+              {% endif %}
+            </div>
+
+            <!-- Director -->
+            {% if form.director %}
+            <div class="form-group">
+              <label for="{{ form.director.id_for_label }}" class="form-label">Director</label>
+              <input
+                type="text"
+                id="{{ form.director.id_for_label }}"
+                name="{{ form.director.html_name }}"
+                value="{{ form.director.value|default:'' }}"
+                class="form-input{% if form.director.errors %} form-input--error{% endif %}"
+                placeholder="Director name"
+              />
+              {% if form.director.errors %}
+              <span class="form-error">{{ form.director.errors|join:", " }}</span>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Duration -->
+            {% if form.duration %}
+            <div class="form-group">
+              <label for="{{ form.duration.id_for_label }}" class="form-label">Duration (minutes)</label>
+              <input
+                type="number"
+                id="{{ form.duration.id_for_label }}"
+                name="{{ form.duration.html_name }}"
+                value="{{ form.duration.value|default:'' }}"
+                class="form-input{% if form.duration.errors %} form-input--error{% endif %}"
+                placeholder="e.g. 120"
+                min="1"
+              />
+              {% if form.duration.errors %}
+              <span class="form-error">{{ form.duration.errors|join:", " }}</span>
+              {% endif %}
+            </div>
+            {% endif %}
+
+          </div><!-- /grid -->
+
+          <!-- Form Actions -->
+          <div style="display:flex; gap:1rem; margin-top:1.75rem; padding-top:1.25rem; border-top:1px solid var(--border);">
+            <button type="submit" class="btn btn--primary">
+              {% if movie %}&#9998; Save Changes{% else %}&#10133; Add Movie{% endif %}
+            </button>
+            <a href="{% url 'admin_panel:movies' %}" class="btn btn--ghost">Cancel</a>
+            {% if movie %}
+            <a href="{% url 'admin_panel:delete_movie' movie.pk %}"
+               class="btn btn--danger"
+               style="margin-left:auto;">
+              &#128465; Delete Movie
+            </a>
+            {% endif %}
+          </div>
+
+        </form>
+      </div>
+    </div><!-- /card -->
+  </div><!-- /admin-content -->
+</div><!-- /admin-layout -->
+
+{% endblock %}

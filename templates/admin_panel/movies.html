@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Manage Movies — NextReel Admin{% endblock %}
+
+{% block content %}
+
+<div class="admin-layout">
+
+  <!-- ============================================================
+       SIDEBAR
+  ============================================================ -->
+  {% url 'admin_panel:dashboard' as url_dash %}
+  {% url 'admin_panel:users' as url_users %}
+  {% url 'admin_panel:movies' as url_movies %}
+
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__header">
+      <span style="color:var(--accent); font-weight:700; font-size:1rem;">&#9881; Admin Panel</span>
+    </div>
+    <nav>
+      <a href="{{ url_dash }}"
+         class="admin-sidebar__link{% if request.path == url_dash %} admin-sidebar__link--active{% endif %}">
+        &#128202; Dashboard
+      </a>
+      <a href="{{ url_users }}"
+         class="admin-sidebar__link{% if request.path == url_users %} admin-sidebar__link--active{% endif %}">
+        &#128101; Users
+      </a>
+      <a href="{{ url_movies }}"
+         class="admin-sidebar__link{% if request.path == url_movies %} admin-sidebar__link--active{% endif %}">
+        &#127916; Movies
+      </a>
+      <a href="{% url 'admin_panel:add_movie' %}" class="admin-sidebar__link">
+        &#10133; Add Movie
+      </a>
+      <div class="admin-sidebar__divider"></div>
+      <form method="post" action="{% url 'admin_panel:retrain' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="admin-sidebar__link admin-sidebar__link--btn"
+                onclick="return confirm('Retrain recommendation models? This may take a while.');">
+          &#129302; Retrain Models
+        </button>
+      </form>
+      <div class="admin-sidebar__divider"></div>
+      <a href="{% url 'home' %}" class="admin-sidebar__link">
+        &#8592; Back to Site
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ============================================================
+       MAIN CONTENT
+  ============================================================ -->
+  <div class="admin-content">
+    <div class="admin-content__header">
+      <div>
+        <h1 class="admin-content__title">Movie Management</h1>
+        {% if movies %}
+        <span style="color:var(--text-muted); font-size:0.875rem;">
+          {{ movies|length }} movie{{ movies|length|pluralize }} total
+        </span>
+        {% endif %}
+      </div>
+      <a href="{% url 'admin_panel:add_movie' %}" class="btn btn--primary">
+        &#10133; Add Movie
+      </a>
+    </div>
+
+    <!-- Search Bar -->
+    <div style="margin-bottom:1.5rem;">
+      <form method="get" action="{{ url_movies }}" class="search-bar">
+        <input
+          type="text"
+          name="q"
+          value="{{ search_query|default:'' }}"
+          placeholder="Search by title, genre, or year..."
+          class="search-bar__input"
+          aria-label="Search movies"
+        />
+        <button type="submit" class="search-bar__btn btn btn--primary">Search</button>
+        {% if search_query %}
+        <a href="{{ url_movies }}" class="btn btn--ghost btn--sm">Clear</a>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Movies Table -->
+    <div class="card">
+      <div class="card__body" style="padding:0; overflow-x:auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Poster</th>
+              <th>Title</th>
+              <th>Year</th>
+              <th>Genres</th>
+              <th>Avg Rating</th>
+              <th>Reviews</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for movie in movies %}
+            <tr>
+              <!-- Poster thumbnail -->
+              <td style="width:56px; padding:0.5rem;">
+                <a href="{% url 'movies:detail' movie.pk %}">
+                  <img
+                    src="{{ movie.poster_url }}"
+                    alt="{{ movie.title }}"
+                    style="width:48px; height:68px; object-fit:cover; border-radius:0.35rem; display:block;"
+                    onerror="this.src='{% static 'images/default_poster.svg' %}'"
+                  />
+                </a>
+              </td>
+
+              <!-- Title -->
+              <td style="font-weight:500;">
+                <a href="{% url 'movies:detail' movie.pk %}" style="color:var(--accent);">
+                  {{ movie.title }}
+                </a>
+              </td>
+
+              <!-- Year -->
+              <td style="color:var(--text-muted);">{{ movie.year|default:"—" }}</td>
+
+              <!-- Genres -->
+              <td>
+                <div style="display:flex; flex-wrap:wrap; gap:0.3rem; max-width:200px;">
+                  {% for genre in movie.genres.all|slice:":3" %}
+                  <span class="badge badge--genre">{{ genre.name }}</span>
+                  {% endfor %}
+                  {% if movie.genres.count > 3 %}
+                  <span class="badge" style="background:var(--surface-2); color:var(--text-muted);">
+                    +{{ movie.genres.count|add:"-3" }}
+                  </span>
+                  {% endif %}
+                </div>
+              </td>
+
+              <!-- Rating -->
+              <td>
+                {% if movie.avg_rating %}
+                <div style="display:flex; align-items:center; gap:0.3rem;">
+                  <span class="star star--filled" style="font-size:0.85rem;">&#9733;</span>
+                  <span>{{ movie.avg_rating|floatformat:1 }}</span>
+                </div>
+                {% else %}
+                <span style="color:var(--text-muted);">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Total Reviews -->
+              <td style="color:var(--text-muted);">{{ movie.total_ratings|default:"0" }}</td>
+
+              <!-- Actions -->
+              <td>
+                <div style="display:flex; gap:0.4rem; flex-wrap:nowrap;">
+                  <a href="{% url 'admin_panel:edit_movie' movie.pk %}"
+                     class="btn btn--secondary btn--sm"
+                     title="Edit movie">
+                    &#9998; Edit
+                  </a>
+                  <a href="{% url 'admin_panel:delete_movie' movie.pk %}"
+                     class="btn btn--danger btn--sm"
+                     title="Delete movie">
+                    &#128465; Delete
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7">
+                <div class="empty-state" style="padding:2rem 0;">
+                  <div class="empty-state__icon">&#127916;</div>
+                  <p class="empty-state__text">
+                    {% if search_query %}
+                    No movies match &ldquo;{{ search_query }}&rdquo;.
+                    {% else %}
+                    No movies in the database.
+                    {% endif %}
+                  </p>
+                  <a href="{% url 'admin_panel:add_movie' %}"
+                     class="btn btn--primary"
+                     style="margin-top:1rem;">
+                    Add First Movie
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination" style="margin-top:1.5rem;" aria-label="Movie list pages">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}"
+         class="pagination__item"><span class="pagination__link">&laquo; Prev</span></a>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="pagination__item">
+          <span class="pagination__link pagination__link--active">{{ num }}</span>
+        </span>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+        <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}"
+           class="pagination__item"><span class="pagination__link">{{ num }}</span></a>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}"
+         class="pagination__item"><span class="pagination__link">Next &raquo;</span></a>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+  </div><!-- /admin-content -->
+</div><!-- /admin-layout -->
+
+{% endblock %}

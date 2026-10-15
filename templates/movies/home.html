@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}NextReel — Discover Your Next Favorite Film{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     HERO SECTION
+============================================================ -->
+<section class="hero">
+  <div class="hero__bg" aria-hidden="true"></div>
+  <div class="hero__content">
+    <h1 class="hero__title">Discover Your Next<br />Favorite Film</h1>
+    <p class="hero__subtitle">
+      Personalized movie recommendations tailored to your taste,
+      mood, and viewing history.
+    </p>
+    <div class="hero__actions">
+      <a href="{% url 'movies:list' %}" class="btn btn--primary">Explore Movies</a>
+      {% if request.user.is_authenticated %}
+      <a href="{% url 'recommendations:index' %}" class="btn btn--secondary">Get Recommendations</a>
+      {% else %}
+      <a href="{% url 'users:register' %}" class="btn btn--secondary">Get Recommendations</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     GENRE PILLS
+============================================================ -->
+{% if genres %}
+<section class="section section--genres">
+  <div class="filter-bar">
+    <a href="{% url 'movies:list' %}" class="filter-chip filter-chip--active">All</a>
+    {% for genre in genres %}
+    <a href="{% url 'movies:list' %}?genre_id={{ genre.pk }}" class="filter-chip">
+      {{ genre.name }}
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ============================================================
+     FEATURED FILMS
+============================================================ -->
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">Featured Films</h2>
+    <a href="{% url 'movies:list' %}" class="section__link">See all &rsaquo;</a>
+  </div>
+
+  {% if featured_movies %}
+  <div class="movie-row movie-row--six">
+    {% for movie in featured_movies %}
+    {% with show_watchlist=True %}{% include "movies/_card.html" %}{% endwith %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">&#127916;</div>
+    <p class="empty-state__text">No featured films available yet.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ============================================================
+     TRENDING NOW
+============================================================ -->
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">Trending Now</h2>
+    <a href="{% url 'movies:list' %}" class="section__link">See all &rsaquo;</a>
+  </div>
+
+  {% if trending_movies %}
+  <div class="movie-row movie-row--six">
+    {% for movie in trending_movies %}
+    {% include "movies/_card.html" %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">&#128200;</div>
+    <p class="empty-state__text">No trending movies at this time.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ============================================================
+     NEW RELEASES
+============================================================ -->
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">New Releases</h2>
+    <a href="{% url 'movies:list' %}" class="section__link">See all &rsaquo;</a>
+  </div>
+
+  {% if new_releases %}
+  <div class="movie-row movie-row--six">
+    {% for movie in new_releases %}
+    {% include "movies/_card.html" %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">&#127381;</div>
+    <p class="empty-state__text">No new releases right now.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ============================================================
+     LATEST MOVIES  (TMDB — 2020+)
+============================================================ -->
+{% if latest_movies %}
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">Latest Movies</h2>
+    <a href="{% url 'movies:list' %}?year_from=2020" class="section__link">See all &rsaquo;</a>
+  </div>
+  <div class="movie-row movie-row--six">
+    {% for movie in latest_movies %}
+    {% include "movies/_card.html" %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ============================================================
+     SIGN-UP CTA BANNER  (shown to anonymous users)
+============================================================ -->
+{% if not request.user.is_authenticated %}
+<section class="section section--cta">
+  <div class="card card--cta">
+    <div class="card__body" style="text-align:center;">
+      <h2>Get Personalized Recommendations</h2>
+      <p style="color:var(--text-muted); margin: 0.75rem 0 1.5rem;">
+        Create a free account and get recommendations based on your taste.
+      </p>
+      <a href="{% url 'users:register' %}" class="btn btn--primary">Join NextReel Free</a>
+      <a href="{% url 'users:login' %}" class="btn btn--ghost" style="margin-left:1rem;">Sign In</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Dark background circle -->
+  <circle cx="16" cy="16" r="16" fill="#1A1A2E"/>
+  <!-- Gold ring -->
+  <circle cx="16" cy="16" r="13" fill="none" stroke="#E8A020" stroke-width="1.5"/>
+  <!-- NR text -->
+  <text x="16" y="21" font-family="Arial,sans-serif" font-size="13" font-weight="bold"
+    fill="#E8A020" text-anchor="middle">NR</text>
+</svg>

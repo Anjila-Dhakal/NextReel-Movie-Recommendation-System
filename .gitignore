@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Django
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+*.log
+
+# ML models (large binary files — retrain locally)
+recommendations/ml_models/*.pkl
+reviews/ml_models/*.pkl
+
+# Datasets (download separately)
+datasets/*.csv
+datasets/*.zip
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude local settings
+.claude/settings.local.json

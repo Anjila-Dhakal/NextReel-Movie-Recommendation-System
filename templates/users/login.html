@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sign In — NextReel{% endblock %}
+
+{% block content %}
+
+<div class="auth-page">
+  <div class="card auth-card">
+
+    <!-- Brand mark -->
+    <div class="auth-card__brand">
+      <a href="{% url 'home' %}" class="nav__brand">
+        <span>&#9654;</span> NextReel
+      </a>
+    </div>
+
+    <div class="card__header">
+      <h1 class="auth-card__title">Welcome Back</h1>
+      <p class="auth-card__subtitle" style="color:var(--text-muted);">
+        Sign in to access your personalized recommendations.
+      </p>
+    </div>
+
+    <div class="card__body">
+      <form method="post" action="{% url 'users:login' %}">
+        {% csrf_token %}
+
+        {% if next %}
+        <input type="hidden" name="next" value="{{ next }}" />
+        {% endif %}
+
+        <!-- Non-field errors -->
+        {% if form.non_field_errors %}
+        <div class="form-error" style="margin-bottom:1rem; padding:0.75rem; border-radius:0.5rem; background:rgba(192,57,43,0.1);">
+          {% for error in form.non_field_errors %}
+          <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Username -->
+        <div class="form-group">
+          <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+          <input
+            type="text"
+            id="{{ form.username.id_for_label }}"
+            name="{{ form.username.html_name }}"
+            value="{{ form.username.value|default:'' }}"
+            class="form-input{% if form.username.errors %} form-input--error{% endif %}"
+            placeholder="Enter your username"
+            autocomplete="username"
+            autofocus
+          />
+          {% if form.username.errors %}
+          <span class="form-error">{{ form.username.errors|join:", " }}</span>
+          {% endif %}
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+          <input
+            type="password"
+            id="{{ form.password.id_for_label }}"
+            name="{{ form.password.html_name }}"
+            class="form-input{% if form.password.errors %} form-input--error{% endif %}"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+          />
+          {% if form.password.errors %}
+          <span class="form-error">{{ form.password.errors|join:", " }}</span>
+          {% endif %}
+        </div>
+
+        <!-- Forgot password -->
+        <div style="text-align:right; margin-top:-0.5rem; margin-bottom:1.25rem;">
+          <a href="{% url 'users:password_reset' %}" class="form-help" style="font-size:0.85rem;">Forgot password?</a>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn btn--primary" style="width:100%; justify-content:center;">
+          Sign In
+        </button>
+      </form>
+    </div>
+
+    <div class="card__footer" style="text-align:center; padding-top:1.25rem; border-top:1px solid var(--border);">
+      <p style="color:var(--text-muted); font-size:0.9rem;">
+        Don&rsquo;t have an account?
+        <a href="{% url 'users:register' %}" class="auth-link">Create one free</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

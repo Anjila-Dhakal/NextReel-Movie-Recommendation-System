@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admin Dashboard — NextReel{% endblock %}
+
+{% block content %}
+
+<div class="admin-layout">
+
+  <!-- ============================================================
+       SIDEBAR
+  ============================================================ -->
+  {% url 'admin_panel:dashboard' as url_dash %}
+  {% url 'admin_panel:users' as url_users %}
+  {% url 'admin_panel:movies' as url_movies %}
+
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__header">
+      <span style="color:var(--accent); font-weight:700; font-size:1rem;">&#9881; Admin Panel</span>
+    </div>
+    <nav>
+      <a href="{{ url_dash }}"
+         class="admin-sidebar__link{% if request.path == url_dash %} admin-sidebar__link--active{% endif %}">
+        &#128202; Dashboard
+      </a>
+      <a href="{{ url_users }}"
+         class="admin-sidebar__link{% if request.path == url_users %} admin-sidebar__link--active{% endif %}">
+        &#128101; Users
+      </a>
+      <a href="{{ url_movies }}"
+         class="admin-sidebar__link{% if request.path == url_movies %} admin-sidebar__link--active{% endif %}">
+        &#127916; Movies
+      </a>
+      <a href="{% url 'admin_panel:add_movie' %}"
+         class="admin-sidebar__link">
+        &#10133; Add Movie
+      </a>
+      <div class="admin-sidebar__divider"></div>
+      <form method="post" action="{% url 'admin_panel:retrain' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="admin-sidebar__link admin-sidebar__link--btn"
+                onclick="return confirm('Retrain recommendation models? This may take a while.');">
+          &#129302; Retrain Models
+        </button>
+      </form>
+      <div class="admin-sidebar__divider"></div>
+      <a href="{% url 'home' %}" class="admin-sidebar__link">
+        &#8592; Back to Site
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ============================================================
+       MAIN CONTENT
+  ============================================================ -->
+  <div class="admin-content">
+    <div class="admin-content__header">
+      <h1 class="admin-content__title">Dashboard</h1>
+      <span style="color:var(--text-muted); font-size:0.875rem;">Overview of NextReel</span>
+    </div>
+
+    <!-- ── STATS CARDS ── -->
+    <div class="stats-grid" style="margin-bottom:2rem;">
+
+      <div class="stat-card">
+        <span class="stat-card__value">{{ total_users }}</span>
+        <span class="stat-card__label">Total Users</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-card__value">{{ total_movies }}</span>
+        <span class="stat-card__label">Total Movies</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-card__value">{{ total_reviews }}</span>
+        <span class="stat-card__label">Total Reviews</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-card__value" style="color:#2ecc71;">
+          {% if total_reviews %}
+            {{ positive_reviews }}
+            <small style="font-size:0.75rem; font-weight:400;">
+              ({% widthratio positive_reviews total_reviews 100 %}%)
+            </small>
+          {% else %}0{% endif %}
+        </span>
+        <span class="stat-card__label">Positive Reviews</span>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-card__value" style="color:var(--cta);">
+          {% if total_reviews %}
+            {{ negative_reviews }}
+            <small style="font-size:0.75rem; font-weight:400;">
+              ({% widthratio negative_reviews total_reviews 100 %}%)
+            </small>
+          {% else %}0{% endif %}
+        </span>
+        <span class="stat-card__label">Negative Reviews</span>
+      </div>
+
+    </div>
+
+    <!-- ── TWO-COLUMN ROW: Top Movies + Recent Users ── -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+
+      <!-- Top Movies -->
+      <div class="card">
+        <div class="card__header">
+          <h2 style="font-size:1rem; margin:0;">&#11088; Top Rated Movies</h2>
+          <a href="{% url 'admin_panel:movies' %}" class="btn btn--ghost btn--sm">View All</a>
+        </div>
+        <div class="card__body" style="padding:0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Avg Rating</th>
+                <th>Reviews</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for movie in top_movies %}
+              <tr>
+                <td style="color:var(--text-muted);">{{ forloop.counter }}</td>
+                <td>
+                  <a href="{% url 'movies:detail' movie.pk %}" style="color:var(--accent);">
+                    {{ movie.title }}
+                  </a>
+                </td>
+                <td>
+                  <span class="star star--filled" style="font-size:0.85rem;">&#9733;</span>
+                  {{ movie.avg_rating|floatformat:1|default:"—" }}
+                </td>
+                <td style="color:var(--text-muted);">{{ movie.total_ratings }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
+                  No movies yet.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Users -->
+      <div class="card">
+        <div class="card__header">
+          <h2 style="font-size:1rem; margin:0;">&#128101; Recent Users</h2>
+          <a href="{% url 'admin_panel:users' %}" class="btn btn--ghost btn--sm">View All</a>
+        </div>
+        <div class="card__body" style="padding:0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Joined</th>
+                <th>Staff</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in recent_users %}
+              <tr>
+                <td>
+                  <span style="font-weight:500;">{{ user.username }}</span>
+                </td>
+                <td style="color:var(--text-muted); font-size:0.85rem;">
+                  {{ user.email|default:"—" }}
+                </td>
+                <td style="color:var(--text-muted); font-size:0.85rem;">
+                  {{ user.date_joined|date:"M j, Y" }}
+                </td>
+                <td>
+                  {% if user.is_staff %}
+                  <span class="badge badge--positive">Staff</span>
+                  {% else %}
+                  <span class="badge badge--neutral">User</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
+                  No users yet.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /two-col row -->
+
+    <!-- ── RECENT REVIEWS ── -->
+    <div class="card">
+      <div class="card__header">
+        <h2 style="font-size:1rem; margin:0;">&#128172; Recent Reviews</h2>
+      </div>
+      <div class="card__body" style="padding:0;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Movie</th>
+              <th>Rating</th>
+              <th>Sentiment</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for review in recent_reviews %}
+            <tr>
+              <td>{{ review.user.username }}</td>
+              <td>
+                <a href="{% url 'movies:detail' review.movie.pk %}" style="color:var(--accent);">
+                  {{ review.movie.title }}
+                </a>
+              </td>
+              <td>
+                {% for i in "12345" %}
+                  {% if forloop.counter <= review.rating %}
+                  <span class="star star--filled" style="font-size:0.8rem;">&#9733;</span>
+                  {% else %}
+                  <span class="star star--empty" style="font-size:0.8rem;">&#9734;</span>
+                  {% endif %}
+                {% endfor %}
+              </td>
+              <td>
+                {% if review.sentiment %}
+                <span class="badge
+                  {% if review.sentiment == 'positive' %}badge--positive
+                  {% elif review.sentiment == 'negative' %}badge--negative
+                  {% else %}badge--neutral{% endif %}">
+                  {{ review.sentiment|capfirst }}
+                </span>
+                {% else %}
+                <span class="badge badge--neutral">—</span>
+                {% endif %}
+              </td>
+              <td style="color:var(--text-muted); font-size:0.85rem;">
+                {{ review.created_at|date:"M j, Y" }}
+              </td>
+              <td>
+                <a href="{% url 'reviews:delete' review.pk %}"
+                   class="btn btn--danger btn--sm"
+                   onclick="return confirm('Delete this review?');">
+                  Delete
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" style="text-align:center; color:var(--text-muted); padding:1.5rem;">
+                No reviews yet.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── RETRAIN MODELS BUTTON (prominent) ── -->
+    <div class="card" style="margin-top:1.5rem;">
+      <div class="card__body" style="display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap;">
+        <div>
+          <h3 style="margin:0 0 0.35rem;">&#129302; Retrain Recommendation Models</h3>
+          <p style="color:var(--text-muted); margin:0; font-size:0.875rem;">
+            Rebuild the collaborative filter and NLP sentiment models with the latest data.
+            This operation may take a few minutes.
+          </p>
+        </div>
+        <form method="post" action="{% url 'admin_panel:retrain' %}" style="flex-shrink:0;">
+          {% csrf_token %}
+          <button type="submit"
+                  class="btn btn--primary"
+                  onclick="return confirm('This will retrain all recommendation models. Continue?');">
+            &#129302; Retrain Now
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div><!-- /admin-content -->
+</div><!-- /admin-layout -->
+
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Delete "{{ movie.title }}" — NextReel Admin{% endblock %}
+
+{% block content %}
+
+<div class="admin-layout">
+
+  <!-- ============================================================
+       SIDEBAR
+  ============================================================ -->
+  {% url 'admin_panel:dashboard' as url_dash %}
+  {% url 'admin_panel:users' as url_users %}
+  {% url 'admin_panel:movies' as url_movies %}
+
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar__header">
+      <span style="color:var(--accent); font-weight:700; font-size:1rem;">&#9881; Admin Panel</span>
+    </div>
+    <nav>
+      <a href="{{ url_dash }}"
+         class="admin-sidebar__link{% if request.path == url_dash %} admin-sidebar__link--active{% endif %}">
+        &#128202; Dashboard
+      </a>
+      <a href="{{ url_users }}"
+         class="admin-sidebar__link{% if request.path == url_users %} admin-sidebar__link--active{% endif %}">
+        &#128101; Users
+      </a>
+      <a href="{{ url_movies }}"
+         class="admin-sidebar__link{% if request.path == url_movies %} admin-sidebar__link--active{% endif %}">
+        &#127916; Movies
+      </a>
+      <a href="{% url 'admin_panel:add_movie' %}" class="admin-sidebar__link">
+        &#10133; Add Movie
+      </a>
+      <div class="admin-sidebar__divider"></div>
+      <a href="{% url 'home' %}" class="admin-sidebar__link">
+        &#8592; Back to Site
+      </a>
+    </nav>
+  </aside>
+
+  <!-- ============================================================
+       MAIN CONTENT — Centered confirmation card
+  ============================================================ -->
+  <div class="admin-content">
+    <div style="max-width:560px; margin:0 auto; padding-top:2rem;">
+
+      <!-- Back link -->
+      <a href="{% url 'admin_panel:movies' %}"
+         class="btn btn--ghost btn--sm"
+         style="margin-bottom:1.5rem; display:inline-flex; align-items:center; gap:0.4rem;">
+        &#8592; Back to Movies
+      </a>
+
+      <div class="card" style="text-align:center;">
+        <div class="card__body" style="padding:2.5rem 2rem;">
+
+          <!-- Warning icon -->
+          <div style="font-size:3rem; margin-bottom:1rem; color:var(--cta);">&#9888;</div>
+
+          <h1 style="font-size:1.5rem; margin-bottom:0.5rem;">Delete Movie</h1>
+          <p style="color:var(--text-muted); margin-bottom:1.5rem;">
+            You are about to permanently delete this movie and all associated data
+            (reviews, watchlist entries, watch history). This action cannot be undone.
+          </p>
+
+          <!-- Movie preview -->
+          <div style="
+            display:flex;
+            align-items:center;
+            gap:1.25rem;
+            background:var(--surface-2);
+            border:1px solid var(--border);
+            border-radius:0.75rem;
+            padding:1rem 1.25rem;
+            margin-bottom:2rem;
+            text-align:left;
+          ">
+            <img
+              src="{{ movie.poster_url }}"
+              alt="{{ movie.title }} poster"
+              style="width:56px; height:80px; object-fit:cover; border-radius:0.4rem; flex-shrink:0;"
+              onerror="this.src='{% static 'images/default_poster.svg' %}'"
+            />
+            <div>
+              <h2 style="font-size:1.15rem; margin:0 0 0.3rem; color:var(--text);">
+                {{ movie.title }}
+              </h2>
+              <p style="margin:0; color:var(--text-muted); font-size:0.875rem;">
+                {{ movie.year }}
+                {% if genre_list %}
+                &mdash;
+                {% for genre in genre_list|slice:":3" %}
+                <span class="badge badge--genre">{{ genre.name }}</span>
+                {% endfor %}
+                {% endif %}
+              </p>
+              {% if movie.total_ratings %}
+              <p style="margin:0.4rem 0 0; color:var(--text-muted); font-size:0.8rem;">
+                {{ movie.total_ratings }} review{{ movie.total_ratings|pluralize }} will be deleted.
+              </p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+            <a href="{% url 'admin_panel:movies' %}" class="btn btn--secondary">
+              Cancel — Keep Movie
+            </a>
+            <form method="post" action="{% url 'admin_panel:delete_movie' movie.pk %}" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn--danger">
+                &#128465; Yes, Delete Permanently
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div><!-- /card -->
+
+    </div><!-- /centered-wrapper -->
+  </div><!-- /admin-content -->
+</div><!-- /admin-layout -->
+
+{% endblock %}

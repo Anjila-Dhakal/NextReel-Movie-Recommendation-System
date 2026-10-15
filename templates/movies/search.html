@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+{% if search_query %}Search: {{ search_query }}{% else %}Search Movies{% endif %} — NextReel
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     SEARCH HERO
+============================================================ -->
+<section class="section section--search-hero">
+  <h1 class="search-hero__title">Find Your Film</h1>
+
+  <form method="get" action="{% url 'movies:search' %}" class="search-form">
+    <div class="search-bar search-bar--large">
+      <input type="text" name="q" id="search-input" value="{{ search_query|default:'' }}"
+        placeholder="Search by title..." class="search-bar__input"
+        aria-label="Search movies" />
+      <button type="submit" class="search-bar__btn btn btn--primary">
+        &#128269; Search
+      </button>
+    </div>
+
+    <!-- Filters row -->
+    <div class="filter-bar" style="margin-top:1rem; flex-wrap:wrap; gap:0.75rem; align-items:flex-end;">
+
+      <!-- Genre filter -->
+      <div class="form-group" style="margin:0;">
+        <label class="form-label" style="font-weight:700;" for="filter-genre">Genre</label>
+        <select name="genre" id="filter-genre" class="form-input" style="min-width:140px;">
+          <option value="">All Genres</option>
+          {% for genre in genres %}
+          <option value="{{ genre.pk }}" {% if selected_genre and selected_genre.pk == genre.pk %}selected{% endif %}>
+            {{ genre.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Year From -->
+      <div class="form-group" style="margin:0;">
+        <label class="form-label" style="font-weight:700;" for="filter-year-from">Year From</label>
+        <input type="number" name="year_from" id="filter-year-from" value="{{ year_from|default:'' }}"
+          placeholder="e.g. 1990" class="form-input" style="width:110px;" min="1900" max="2099" />
+      </div>
+
+      <!-- Year To -->
+      <div class="form-group" style="margin:0;">
+        <label class="form-label" style="font-weight:700;" for="filter-year-to">Year To</label>
+        <input type="number" name="year_to" id="filter-year-to" value="{{ year_to|default:'' }}" placeholder="e.g. 2024"
+          class="form-input" style="width:110px;" min="1900" max="2099" />
+      </div>
+
+      <div style="display:flex; gap:0.5rem; align-items:flex-end; padding-bottom:2px;">
+        <button type="submit" class="btn btn--primary btn--sm">Apply Filters</button>
+        {% if search_query or selected_genre or year_from or year_to %}
+        <a href="{% url 'movies:search' %}" class="btn btn--primary btn--sm">Reset</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+</section>
+
+<!-- ============================================================
+     RESULTS
+============================================================ -->
+<section class="section" style="padding-top:1.5rem;">
+
+  <!-- Results header -->
+  {% if search_query or selected_genre or year_from or year_to %}
+  <div class="section__header" style="margin-bottom:1.5rem;">
+    <h2 class="section__title" style="font-size:1.1rem; font-weight:500; color:var(--text-muted);">
+      {% if movies %}
+      {{ total_count }} result{{ total_count|pluralize }}
+      {% if search_query %} for &ldquo;<strong style="color:var(--text);">{{ search_query }}</strong>&rdquo;{% endif %}
+      {% if selected_genre %} in <strong style="color:var(--text);">{{ selected_genre_name }}</strong>{% endif %}
+      {% if year_from and year_to %} ({{ year_from }}–{{ year_to }}){% elif year_from %} (from {{ year_from }}){% elif
+      year_to %} (up to {{ year_to }}){% endif %}
+      {% else %}
+      No results
+      {% if search_query %} for &ldquo;<strong style="color:var(--text);">{{ search_query }}</strong>&rdquo;{% endif %}
+      {% endif %}
+    </h2>
+  </div>
+  {% endif %}
+
+  <!-- Results grid -->
+  {% if movies %}
+  <div class="movie-grid">
+    {% for movie in movies %}
+    {% with show_watchlist=True %}{% include "movies/_card.html" %}{% endwith %}
+    {% endfor %}
+  </div>
+
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="pagination" aria-label="Search result pages" style="margin-top:2rem;">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre.pk }}{% endif %}{% if year_from %}&year_from={{ year_from }}{% endif %}{% if year_to %}&year_to={{ year_to }}{% endif %}" class="pagination__item">
+      <span class="pagination__link">&laquo; Prev</span>
+    </a>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    {% if page_obj.number == num %}
+    <span class="pagination__item"><span class="pagination__link pagination__link--active">{{ num }}</span></span>
+    {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+    <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre.pk }}{% endif %}{% if year_from %}&year_from={{ year_from }}{% endif %}{% if year_to %}&year_to={{ year_to }}{% endif %}" class="pagination__item">
+      <span class="pagination__link">{{ num }}</span>
+    </a>
+    {% elif num == 1 or num == page_obj.paginator.num_pages %}
+    <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre.pk }}{% endif %}{% if year_from %}&year_from={{ year_from }}{% endif %}{% if year_to %}&year_to={{ year_to }}{% endif %}" class="pagination__item">
+      <span class="pagination__link">{{ num }}</span>
+    </a>
+    {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre.pk }}{% endif %}{% if year_from %}&year_from={{ year_from }}{% endif %}{% if year_to %}&year_to={{ year_to }}{% endif %}" class="pagination__item">
+      <span class="pagination__link">Next &raquo;</span>
+    </a>
+    {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <!-- No results after filtering -->
+  <div class="empty-state">
+    <div class="empty-state__icon">&#128269;</div>
+    <p class="empty-state__text">No movies matched your search.</p>
+    <a href="{% url 'movies:search' %}" class="btn btn--ghost" style="margin-top:1rem;">
+      Clear &amp; Try Again
+    </a>
+  </div>
+  {% endif %}
+
+</section>
+
+<script>
+  // Auto-submit search form as user types
+  (function () {
+    const form = document.querySelector('form[action*="search"]');
+    if (!form) return;
+
+    const searchInput = document.getElementById('search-input');
+
+    // Focus input and place cursor at end after page reload
+    if (searchInput && searchInput.value) {
+      const len = searchInput.value.length;
+      searchInput.focus();
+      searchInput.setSelectionRange(len, len);
+    }
+    const genreSelect = document.getElementById('filter-genre');
+    const yearFromInput = document.getElementById('filter-year-from');
+    const yearToInput = document.getElementById('filter-year-to');
+
+    let debounceTimer;
+
+    function submitForm() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        form.submit();
+      }, 500); // 500ms delay to avoid too many submissions
+    }
+
+    // Submit on search input
+    if (searchInput) {
+      searchInput.addEventListener('input', submitForm);
+    }
+
+    // Submit on filter changes
+    if (genreSelect) {
+      genreSelect.addEventListener('change', submitForm);
+    }
+
+    // Year inputs: only submit on Enter key (not while typing)
+    function submitOnEnter(e) {
+      if (e.key === 'Enter') { clearTimeout(debounceTimer); form.submit(); }
+    }
+    if (yearFromInput) {
+      yearFromInput.addEventListener('keydown', submitOnEnter);
+    }
+    if (yearToInput) {
+      yearToInput.addEventListener('keydown', submitOnEnter);
+    }
+  })();
+</script>
+
+{% endblock %}

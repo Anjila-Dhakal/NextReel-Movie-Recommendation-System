@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}All Movies — NextReel{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     PAGE HEADER
+============================================================ -->
+<div class="section section--page-header">
+  <div class="section__header">
+    <div>
+      <h1 class="section__title">All Movies</h1>
+      {% if movies %}
+      <p style="color:var(--text-muted); margin-top:0.25rem;">
+        {{ movies.paginator.count }} movie{{ movies.paginator.count|pluralize }} found
+        {% if search_query %} for &ldquo;{{ search_query }}&rdquo;{% endif %}
+        {% if selected_genre %} in selected genre{% endif %}
+      </p>
+      {% endif %}
+    </div>
+    <a href="{% url 'movies:search' %}" class="btn btn--ghost">Advanced Search</a>
+  </div>
+</div>
+
+<!-- ============================================================
+     SEARCH BAR
+============================================================ -->
+<div class="section section--search">
+  <form method="get" action="{% url 'movies:list' %}" class="search-bar">
+    <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Search movies by title..."
+      class="search-bar__input" aria-label="Search movies" />
+    {% if selected_genre %}
+    <input type="hidden" name="genre" value="{{ selected_genre.pk }}" />
+    {% endif %}
+    <button type="submit" class="search-bar__btn btn btn--primary">Search</button>
+    {% if search_query or selected_genre %}
+    <a href="{% url 'movies:list' %}" class="btn btn--ghost btn--sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- ============================================================
+     GENRE FILTER CHIPS
+============================================================ -->
+{% if genres %}
+<div class="section section--filters">
+  <div class="filter-bar">
+    <a href="{% url 'movies:list' %}{% if search_query %}?q={{ search_query }}{% endif %}"
+      class="filter-chip{% if not selected_genre %} filter-chip--active{% endif %}">
+      All Genres
+    </a>
+    {% for genre in genres %}
+    <a href="{% url 'movies:list' %}?genre={{ genre.pk }}{% if search_query %}&q={{ search_query }}{% endif %}"
+      class="filter-chip{% if selected_genre == genre %} filter-chip--active{% endif %}">
+      {{ genre.name }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ============================================================
+     MOVIE GRID
+============================================================ -->
+<section class="section">
+  {% if movies %}
+  <div class="movie-grid">
+    {% for movie in movies %}
+    {% include "movies/_card.html" with movie=movie show_watchlist=True %}
+    {% endfor %}
+  </div>
+
+  <!-- ============================================================
+       PAGINATION
+  ============================================================ -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="pagination" aria-label="Movie list pages">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre.pk }}{% endif %}{% if year_from %}&year_from={{ year_from }}{% endif %}{% if year_to %}&year_to={{ year_to }}{% endif %}{% if min_rating %}&min_rating={{ min_rating }}{% endif %}"
+      class="pagination__item">
+      <span class="pagination__link">&laquo; Prev</span>
+    </a>
+    {% else %}
+    <span class="pagination__item">
+      <span class="pagination__link pagination__link--disabled">&laquo; Prev</span>
+    </span>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+    {% if page_obj.number == num %}
+    <span class="pagination__item">
+      <span class="pagination__link pagination__link--active">{{ num }}</span>
+    </span>
+    {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %} <a
+      href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre.pk }}{% endif %}{% if year_from %}&year_from={{ year_from }}{% endif %}{% if year_to %}&year_to={{ year_to }}{% endif %}{% if min_rating %}&min_rating={{ min_rating }}{% endif %}"
+      class="pagination__item">
+      <span class="pagination__link">{{ num }}</span>
+      </a>
+      {% elif num == 1 or num == page_obj.paginator.num_pages %}
+      <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre.pk }}{% endif %}{% if year_from %}&year_from={{ year_from }}{% endif %}{% if year_to %}&year_to={{ year_to }}{% endif %}{% if min_rating %}&min_rating={{ min_rating }}{% endif %}"
+        class="pagination__item">
+        <span class="pagination__link">{{ num }}</span>
+      </a>
+      {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_genre %}&genre={{ selected_genre.pk }}{% endif %}{% if year_from %}&year_from={{ year_from }}{% endif %}{% if year_to %}&year_to={{ year_to }}{% endif %}{% if min_rating %}&min_rating={{ min_rating }}{% endif %}"
+        class="pagination__item">
+        <span class="pagination__link">Next &raquo;</span>
+      </a>
+      {% else %}
+      <span class="pagination__item">
+        <span class="pagination__link pagination__link--disabled">Next &raquo;</span>
+      </span>
+      {% endif %}
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <!-- EMPTY STATE -->
+  <div class="empty-state">
+    <div class="empty-state__icon">&#127902;</div>
+    <p class="empty-state__text">
+      {% if search_query %}
+      No movies found for &ldquo;{{ search_query }}&rdquo;.
+      <a href="{% url 'movies:list' %}" class="btn btn--ghost btn--sm"
+        style="margin-top:1rem;display:inline-block;">Browse All Movies</a>
+      {% elif selected_genre %}
+      No movies found in the selected genre.
+      <a href="{% url 'movies:list' %}" class="btn btn--ghost btn--sm"
+        style="margin-top:1rem;display:inline-block;">Show All Genres</a>
+      {% else %}
+      No movies in the database yet.
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}

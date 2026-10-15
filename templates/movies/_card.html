@@ -1,0 +1,42 @@
+{% load static %}
+<article class="movie-card">
+  <div class="movie-card__poster">
+    <a href="{% url 'movies:detail' movie.pk %}">
+      <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster" loading="lazy"
+        onerror="this.src='{% static 'images/default_poster.svg' %}'" />
+    </a>
+    {% if movie.avg_rating %}
+    <div class="movie-card__score">{{ movie.avg_rating|floatformat:1 }}</div>
+    {% endif %}
+    <div class="movie-card__year-pill">{{ movie.year }}</div>
+    <div class="movie-card__overlay">
+      <a href="{% url 'movies:detail' movie.pk %}" class="btn btn--primary btn--sm">Details</a>
+      {% if show_watchlist and request.user.is_authenticated %}
+      <button class="btn btn--ghost btn--sm watchlist-toggle{% if movie.pk in watchlisted_ids %} btn--active{% endif %}"
+        data-url="{% url 'movies:watchlist' movie.pk %}"
+        data-csrf="{{ csrf_token }}">
+        {% if movie.pk in watchlisted_ids %}&#10003; In List{% else %}+ Watchlist{% endif %}
+      </button>
+      {% endif %}
+    </div>
+  </div>
+  <div class="movie-card__body">
+    <h3 class="movie-card__title">
+      <a href="{% url 'movies:detail' movie.pk %}">{{ movie.title }}</a>
+    </h3>
+    <div class="movie-card__meta">
+      <span class="movie-card__year">{{ movie.year }}</span>
+      {% for genre in movie.genres.all|slice:":2" %}
+      <span class="badge badge--genre">{{ genre.name }}</span>
+      {% endfor %}
+    </div>
+    <div class="movie-card__rating">
+      {% with rating=movie.avg_rating|default:0 %}
+      {% for i in "12345" %}
+      {% if forloop.counter <= rating %}<span class="star star--filled">&#9733;</span>{% else %}<span class="star star--empty">&#9734;</span>{% endif %}
+      {% endfor %}
+      {% if movie.avg_rating %}<span class="movie-card__rating-value">{{ movie.avg_rating|floatformat:1 }}</span>{% endif %}
+      {% endwith %}
+    </div>
+  </div>
+</article>

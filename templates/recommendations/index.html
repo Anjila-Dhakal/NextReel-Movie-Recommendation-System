@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if is_cold_start %}Discover What's Hot — NextReel{% else %}Recommended For You — NextReel{% endif %}
+{% endblock %}
+
+{% block content %}
+
+{% if is_cold_start %}
+<!-- ============================================================
+     COLD-START: User has no history yet
+============================================================ -->
+
+<!-- Hero Banner -->
+<section class="hero hero--recs">
+  <div class="hero__bg" aria-hidden="true"></div>
+  <div class="hero__content">
+    <h1 class="hero__title">Discover What&rsquo;s<br />Hot Right Now</h1>
+    <p class="hero__subtitle">
+      Explore trending films, top-rated classics, and the freshest releases.
+      Rate a few movies to unlock personalized recommendations.
+    </p>
+    <div class="hero__actions">
+      <a href="{% url 'movies:list' %}" class="btn btn--primary">Browse All Movies</a>
+      {% if not request.user.is_authenticated %}
+      <a href="{% url 'users:register' %}" class="btn btn--secondary">Create Account for Personalized Picks</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- Trending -->
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">&#128200; Trending Now</h2>
+    <a href="{% url 'movies:list' %}" class="section__link">See all &rsaquo;</a>
+  </div>
+  {% if trending %}
+  <div class="movie-row">
+    {% for movie in trending %}
+    {% include "movies/_card.html" with movie=movie show_watchlist=True %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">&#128200;</div>
+    <p class="empty-state__text">No trending data available.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- Top Rated -->
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">&#11088; Top Rated</h2>
+    <a href="{% url 'movies:list' %}" class="section__link">See all &rsaquo;</a>
+  </div>
+  {% if top_rated %}
+  <div class="movie-row">
+    {% for movie in top_rated %}
+    {% include "movies/_card.html" with movie=movie show_watchlist=True %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">&#11088;</div>
+    <p class="empty-state__text">No top-rated data available.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- New Releases -->
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">&#127381; New Releases</h2>
+    <a href="{% url 'movies:list' %}" class="section__link">See all &rsaquo;</a>
+  </div>
+  {% if new_releases %}
+  <div class="movie-row">
+    {% for movie in new_releases %}
+    {% include "movies/_card.html" with movie=movie show_watchlist=True %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">&#127381;</div>
+    <p class="empty-state__text">No new releases right now.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- Sign-up CTA for anonymous -->
+{% if not request.user.is_authenticated %}
+<section class="section">
+  <div class="card card--cta" style="text-align:center; padding:3rem 2rem;">
+    <div class="card__body">
+      <h2 style="margin-bottom:0.75rem;">Unlock Your Personalized Picks</h2>
+      <p style="color:var(--text-muted); margin-bottom:1.5rem;">
+        Create a free account, rate some movies, and we&rsquo;ll craft
+        recommendations tailored just for you.
+      </p>
+      <a href="{% url 'users:register' %}" class="btn btn--primary">Join NextReel Free</a>
+      <a href="{% url 'users:login' %}" class="btn btn--ghost" style="margin-left:1rem;">Sign In</a>
+    </div>
+  </div>
+</section>
+{% else %}
+<section class="section">
+  <div class="card" style="text-align:center; padding:2rem;">
+    <div class="card__body">
+      <p style="color:var(--text-muted);">
+        Rate more movies to improve your personalized recommendations.
+      </p>
+      <a href="{% url 'movies:list' %}" class="btn btn--secondary" style="margin-top:1rem;">
+        Discover &amp; Rate Movies
+      </a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% else %}
+<!-- ============================================================
+     PERSONALIZED RECOMMENDATIONS
+============================================================ -->
+
+<!-- Page header -->
+<div class="section section--page-header">
+  <div class="section__header">
+    <div>
+      <h1 class="section__title">Recommended For You</h1>
+      <p style="color:var(--text-muted); margin-top:0.35rem;">
+        Your personal cinema, handpicked from your taste — because great films deserve to be found.
+      </p>
+    </div>
+    <a href="{% url 'movies:list' %}" class="btn btn--ghost">Browse All</a>
+  </div>
+</div>
+
+{% if genre_sections %}
+  {% for genre_name, movies in genre_sections %}
+  <section class="section" style="padding-top:2rem; padding-bottom:0.5rem;">
+    <div class="section__header" style="margin-bottom:1rem;">
+      <h2 class="section__title">{{ genre_name }}</h2>
+    </div>
+    <div class="movie-row movie-row--four">
+      {% for movie in movies %}
+      {% include "movies/_card.html" with movie=movie show_watchlist=True %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+{% else %}
+<section class="section">
+  <div class="empty-state">
+    <div class="empty-state__icon">&#127916;</div>
+    <p class="empty-state__text">
+      We don&rsquo;t have enough data yet. Rate a few more movies and check back!
+    </p>
+    <a href="{% url 'movies:list' %}" class="btn btn--secondary" style="margin-top:1.5rem;">
+      Browse &amp; Rate Movies
+    </a>
+  </div>
+</section>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

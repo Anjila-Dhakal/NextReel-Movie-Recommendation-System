@@ -1,0 +1,211 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ request.user.theme_preference|default:'dark' }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}NextReel — Discover Your Next Favourite Film{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}" />
+  <link rel="stylesheet" href="{% static 'css/main.css' %}" />
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- ============================================================
+       NAVBAR
+  ============================================================ -->
+  <nav class="nav">
+    <!-- Mobile checkbox hack toggle -->
+    <input type="checkbox" id="nav-toggle" class="nav__checkbox" hidden />
+
+    <a href="{% url 'home' %}" class="nav__brand">
+      <span class="nav__brand-icon">&#9654;</span> NextReel
+    </a>
+
+    <!-- Hamburger label (CSS-driven, no JS) -->
+    <label for="nav-toggle" class="nav__hamburger" aria-label="Toggle navigation">
+      <span></span>
+      <span></span>
+      <span></span>
+    </label>
+
+    <!-- Nav links -->
+    {% url 'home' as url_home %}
+    {% url 'movies:list' as url_movies %}
+    {% url 'recommendations:index' as url_recs %}
+    {% url 'admin_panel:dashboard' as url_admin %}
+
+    <ul class="nav__links"> 
+  <li> 
+    <a href="{{ url_home }}" 
+       class="nav__link{% if request.path == url_home %} nav__link--active{% endif %}"> 
+      Home 
+    </a> 
+  </li> 
+  <li> 
+    <a href="{{ url_movies }}" 
+       class="nav__link{% if request.path == url_movies %} nav__link--active{% endif %}"> 
+      Movies 
+    </a> 
+  </li> 
+  {% if request.user.is_authenticated %} 
+  <li> 
+    <a href="{{ url_recs }}" 
+       class="nav__link{% if request.path == url_recs %} nav__link--active{% endif %}"> 
+      Recommendations 
+    </a> 
+  </li> 
+  {% endif %} 
+  {% if request.user.is_staff or request.user.is_superuser %} 
+  <li> 
+    <a href="{{ url_admin }}" 
+       class="nav__link{% if request.path == url_admin %} nav__link--active{% endif %}"> 
+      Admin Panel 
+    </a> 
+  </li> 
+  {% endif %} 
+</ul>
+    <!-- Right-side actions -->
+    <div class="nav__actions">
+      <!-- Theme toggle -->
+      <button id="theme-toggle"
+              class="theme-toggle btn btn--icon"
+              aria-label="Toggle theme"
+              title="Toggle theme">
+        {% if request.user.theme_preference == 'warm' %}
+          <span class="theme-toggle__icon">&#9728;</span>
+        {% else %}
+          <span class="theme-toggle__icon">&#9790;</span>
+        {% endif %}
+      </button>
+
+      {% if request.user.is_authenticated %}
+        {% url 'users:profile' as url_profile %}
+        <a href="{{ url_profile }}"
+           class="nav__link{% if request.path == url_profile %} nav__link--active{% endif %}">
+          {{ request.user.username }}
+        </a>
+        <form method="post" action="{% url 'users:logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn--ghost btn--sm">Logout</button>
+        </form>
+      {% else %}
+        <a href="{% url 'users:login' %}" class="btn btn--ghost btn--sm">Login</a>
+        <a href="{% url 'users:register' %}" class="btn btn--primary btn--sm">Register</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- ============================================================
+       DJANGO MESSAGES — rendered as toast notifications
+  ============================================================ -->
+  {% if messages %}
+  <div class="toast-container" aria-live="polite">
+    {% for message in messages %}
+    <div class="toast
+      {% if message.tags == 'success' %}toast--success
+      {% elif message.tags == 'error' %}toast--error
+      {% elif message.tags == 'warning' %}toast--warning
+      {% else %}toast--info{% endif %}"
+      role="alert">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ============================================================
+       MAIN CONTENT
+  ============================================================ -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ============================================================
+       FOOTER
+  ============================================================ -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <span class="footer__brand">
+        <span>&#9654;</span> NextReel
+      </span>
+      <span class="footer__copy">
+        &copy; {% now "Y" %} NextReel &mdash; Powered by Smart Recommendations
+      </span>
+      <div class="footer__links">
+        <a href="{% url 'movies:list' %}" class="footer__link">Movies</a>
+        <a href="{% url 'movies:search' %}" class="footer__link">Search</a>
+        {% if request.user.is_authenticated %}
+        <a href="{% url 'recommendations:index' %}" class="footer__link">Recommendations</a>
+        {% endif %}
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================================
+       SCRIPTS
+  ============================================================ -->
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+
+  <script>
+  // ── AJAX Watchlist Toggle ──────────────────────────────────────
+  function showToast(msg, type) {
+    const container = document.querySelector('.toast-container') || (() => {
+      const c = document.createElement('div');
+      c.className = 'toast-container';
+      c.setAttribute('aria-live', 'polite');
+      document.body.appendChild(c);
+      return c;
+    })();
+    const toast = document.createElement('div');
+    toast.className = 'toast toast--' + type;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+  }
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.watchlist-toggle');
+    if (!btn) return;
+    e.preventDefault();
+    const url = btn.dataset.url;
+    const csrf = btn.dataset.csrf;
+    btn.disabled = true;
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrf,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.in_watchlist) {
+        btn.textContent = '✓ Added';
+        btn.classList.add('btn--active');
+        showToast(data.message, 'success');
+        btn.disabled = false;
+      } else {
+        // If this is a remove button on the watchlist page, fade out the card
+        if (btn.dataset.remove) {
+          const card = btn.closest('.movie-card');
+          if (card) {
+            card.style.transition = 'opacity 0.3s ease';
+            card.style.opacity = '0';
+            setTimeout(() => card.remove(), 300);
+          }
+        } else {
+          btn.textContent = '+ Watchlist';
+          btn.classList.remove('btn--active');
+          btn.disabled = false;
+        }
+        showToast(data.message, 'info');
+      }
+    })
+    .catch(() => { btn.disabled = false; });
+  });
+  </script>
+</body>
+</html>

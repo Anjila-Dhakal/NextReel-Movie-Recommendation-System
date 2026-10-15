@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="av-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2E3250"/>
+      <stop offset="100%" stop-color="#252840"/>
+    </linearGradient>
+
+    <!-- Silhouette gradient -->
+    <linearGradient id="av-sil" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#B0B8D0"/>
+      <stop offset="100%" stop-color="#9BA3BC"/>
+    </linearGradient>
+
+    <!-- Subtle inner ring -->
+    <radialGradient id="av-ring" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Clip to circle -->
+    <clipPath id="av-clip">
+      <circle cx="40" cy="40" r="40"/>
+    </clipPath>
+  </defs>
+
+  <!-- Circular background -->
+  <circle cx="40" cy="40" r="40" fill="url(#av-bg)"/>
+
+  <!-- Highlight overlay -->
+  <circle cx="40" cy="40" r="40" fill="url(#av-ring)"/>
+
+  <!-- Body / shoulders -->
+  <g clip-path="url(#av-clip)" fill="url(#av-sil)">
+    <!-- Torso: an ellipse that bleeds out at the bottom of the circle -->
+    <ellipse cx="40" cy="72" rx="26" ry="18"/>
+
+    <!-- Shirt collar / neck area — slightly darker shade for depth -->
+    <ellipse cx="40" cy="58" rx="14" ry="9" fill="#8A92B2"/>
+
+    <!-- Head -->
+    <circle cx="40" cy="31" r="14" fill="url(#av-sil)"/>
+  </g>
+
+  <!-- Very subtle border ring -->
+  <circle cx="40" cy="40" r="39" fill="none" stroke="#ffffff" stroke-width="0.75" stroke-opacity="0.08"/>
+</svg>

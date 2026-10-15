@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}NextReel — Discover Your Next Favorite Film{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     HERO SECTION
+============================================================ -->
+<section class="hero">
+  <div class="hero__bg" aria-hidden="true"></div>
+  <div class="hero__content">
+    <h1 class="hero__title">Discover Your Next<br />Favorite Film</h1>
+    <p class="hero__subtitle">
+      Personalized movie recommendations tailored to your taste,
+      mood, and viewing history.
+    </p>
+    <div class="hero__actions">
+      <a href="{% url 'movies:list' %}" class="btn btn--primary">Explore Movies</a>
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'recommendations:index' %}" class="btn btn--secondary">Get Recommendations</a>
+      {% else %}
+        <a href="{% url 'users:register' %}" class="btn btn--secondary">Get Recommendations</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     GENRE PILLS
+============================================================ -->
+{% if genres %}
+<section class="section section--genres">
+  <div class="filter-bar">
+    <a href="{% url 'movies:list' %}" class="filter-chip filter-chip--active">All</a>
+    {% for genre in genres %}
+    <a href="{% url 'movies:list' %}?genre={{ genre.pk }}" class="filter-chip">
+      {{ genre.name }}
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<!-- ============================================================
+     FEATURED FILMS
+============================================================ -->
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">Featured Films</h2>
+    <a href="{% url 'movies:list' %}" class="section__link">See all &rsaquo;</a>
+  </div>
+
+  {% if featured_movies %}
+  <div class="movie-grid">
+    {% for movie in featured_movies %}
+    <article class="movie-card">
+      <div class="movie-card__poster">
+        <a href="{% url 'movies:detail' movie.pk %}">
+          <img
+            src="{{ movie.poster_url }}"
+            alt="{{ movie.title }} poster"
+            loading="lazy"
+            onerror="this.src='{% static 'images/default_poster.svg' %}'"
+          />
+        </a>
+        <div class="movie-card__overlay">
+          <a href="{% url 'movies:detail' movie.pk %}" class="btn btn--primary btn--sm">Details</a>
+          {% if request.user.is_authenticated %}
+          <button class="btn btn--ghost btn--sm watchlist-toggle"
+            data-url="{% url 'movies:watchlist' movie.pk %}"
+            data-csrf="{{ csrf_token }}">+ Watchlist</button>
+          {% endif %}
+        </div>
+      </div>
+      <div class="movie-card__body">
+        <h3 class="movie-card__title">
+          <a href="{% url 'movies:detail' movie.pk %}">{{ movie.title }}</a>
+        </h3>
+        <div class="movie-card__meta">
+          <span>{{ movie.year }}</span>
+          {% for genre in movie.genres.all|slice:":2" %}
+          <span class="badge badge--genre">{{ genre.name }}</span>
+          {% endfor %}
+        </div>
+        <div class="movie-card__rating">
+          {% with rating=movie.avg_rating|default:0 %}
+          {% for i in "12345" %}
+            {% if forloop.counter <= rating %}
+            <span class="star star--filled">&#9733;</span>
+            {% else %}
+            <span class="star star--empty">&#9734;</span>
+            {% endif %}
+          {% endfor %}
+          <span class="movie-card__rating-value">{{ movie.avg_rating|floatformat:1|default:"—" }}</span>
+          {% endwith %}
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">&#127916;</div>
+    <p class="empty-state__text">No featured films available yet.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ============================================================
+     TRENDING NOW  (horizontal scroll)
+============================================================ -->
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">Trending Now</h2>
+    <a href="{% url 'movies:list' %}" class="section__link">See all &rsaquo;</a>
+  </div>
+
+  {% if trending_movies %}
+  <div class="movie-row">
+    {% for movie in trending_movies %}
+    <article class="movie-card">
+      <div class="movie-card__poster">
+        <a href="{% url 'movies:detail' movie.pk %}">
+          <img
+            src="{{ movie.poster_url }}"
+            alt="{{ movie.title }} poster"
+            loading="lazy"
+            onerror="this.src='{% static 'images/default_poster.svg' %}'"
+          />
+        </a>
+        <div class="movie-card__overlay">
+          <a href="{% url 'movies:detail' movie.pk %}" class="btn btn--primary btn--sm">Details</a>
+        </div>
+      </div>
+      <div class="movie-card__body">
+        <h3 class="movie-card__title">
+          <a href="{% url 'movies:detail' movie.pk %}">{{ movie.title }}</a>
+        </h3>
+        <div class="movie-card__meta">
+          <span>{{ movie.year }}</span>
+          {% for genre in movie.genres.all|slice:":1" %}
+          <span class="badge badge--genre">{{ genre.name }}</span>
+          {% endfor %}
+        </div>
+        <div class="movie-card__rating">
+          {% with rating=movie.avg_rating|default:0 %}
+          {% for i in "12345" %}
+            {% if forloop.counter <= rating %}
+            <span class="star star--filled">&#9733;</span>
+            {% else %}
+            <span class="star star--empty">&#9734;</span>
+            {% endif %}
+          {% endfor %}
+          {% endwith %}
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">&#128200;</div>
+    <p class="empty-state__text">No trending movies at this time.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ============================================================
+     NEW RELEASES  (horizontal scroll)
+============================================================ -->
+<section class="section">
+  <div class="section__header">
+    <h2 class="section__title">New Releases</h2>
+    <a href="{% url 'movies:list' %}" class="section__link">See all &rsaquo;</a>
+  </div>
+
+  {% if new_releases %}
+  <div class="movie-row">
+    {% for movie in new_releases %}
+    <article class="movie-card">
+      <div class="movie-card__poster">
+        <a href="{% url 'movies:detail' movie.pk %}">
+          <img
+            src="{{ movie.poster_url }}"
+            alt="{{ movie.title }} poster"
+            loading="lazy"
+            onerror="this.src='{% static 'images/default_poster.svg' %}'"
+          />
+        </a>
+        <div class="movie-card__overlay">
+          <a href="{% url 'movies:detail' movie.pk %}" class="btn btn--primary btn--sm">Details</a>
+        </div>
+      </div>
+      <div class="movie-card__body">
+        <h3 class="movie-card__title">
+          <a href="{% url 'movies:detail' movie.pk %}">{{ movie.title }}</a>
+        </h3>
+        <div class="movie-card__meta">
+          <span>{{ movie.year }}</span>
+          {% for genre in movie.genres.all|slice:":1" %}
+          <span class="badge badge--genre">{{ genre.name }}</span>
+          {% endfor %}
+        </div>
+        <div class="movie-card__rating">
+          {% with rating=movie.avg_rating|default:0 %}
+          {% for i in "12345" %}
+            {% if forloop.counter <= rating %}
+            <span class="star star--filled">&#9733;</span>
+            {% else %}
+            <span class="star star--empty">&#9734;</span>
+            {% endif %}
+          {% endfor %}
+          {% endwith %}
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state__icon">&#127381;</div>
+    <p class="empty-state__text">No new releases right now.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- ============================================================
+     SIGN-UP CTA BANNER  (shown to anonymous users)
+============================================================ -->
+{% if not request.user.is_authenticated %}
+<section class="section section--cta">
+  <div class="card card--cta">
+    <div class="card__body" style="text-align:center;">
+      <h2>Get Personalized Recommendations</h2>
+      <p style="color:var(--text-muted); margin: 0.75rem 0 1.5rem;">
+        Create a free account and get recommendations based on your taste.
+      </p>
+      <a href="{% url 'users:register' %}" class="btn btn--primary">Join NextReel Free</a>
+      <a href="{% url 'users:login' %}" class="btn btn--ghost" style="margin-left:1rem;">Sign In</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}
